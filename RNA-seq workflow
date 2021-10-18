@@ -10,21 +10,108 @@ make STAR
 # 2.2 download GTF from https://ftp.ensembl.org/pub/release-104/gtf/homo_sapiens/Homo_sapiens.GRCh38.104.gtf.gz
 # 2.3 build index
 
-build_index.sh
+build_index.sh # /mainfs/scratch/yz3n18/STAR-2.7.9a/Build.index.sh
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------ Start
 #!/bin/bash
-#PBS -l nodes=1:ppn=16 
-#PBS -l walltime=50:00:00
-cd /scratch/yz3n18/2019_Strunz/Picard
+
+#SBATCH --ntasks-per-node=40     # Tasks per node
+#SBATCH --nodes=1                # Number of nodes requested
+#SBATCH --time=10:00:00          # walltime
+cd /scratch/yz3n18/STAR-2.7.9a/source # important to remove to your STAR directory
+
+module load conda
 source activate RNAseqPython3
 
+STAR --runThreadN 12 \
+--runMode genomeGenerate \
+--genomeDir /mainfs/scratch/yz3n18/STAR-2.7.9a/GRCh38_index/ \
+--genomeFastaFiles /mainfs/scratch/yz3n18/STAR-2.7.9a/Reference/Homo_sapiens.GRCh38.dna.primary_assembly.fa \
+--sjdbGTFfile /mainfs/scratch/yz3n18/STAR-2.7.9a/Reference/GTF/Homo_sapiens.GRCh38.104.gtf \
+--sjdbOverhang 99
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------- End
+sbatch build_index.sh # submit file
+
+# 3. Make sample directory
+
+Step0.sh
+------------------------------------------------------------------------------------------------------------------------------------------------------------------ Start
+#!/bin/bash
+#SBATCH --ntasks-per-node=40     # Tasks per node
+#SBATCH --nodes=2                # Number of nodes requested
+#SBATCH --time=50:00:00          # walltime
+
+cd /scratch/yz3n18/Mark_redox/Process
+echo 1
+cat names_4 | while read x; do
+mkdir "$x"
+echo 'Make directory completed'
+done
+------------------------------------------------------------------------------------------------------------------------------------------------------------------- End
+sh Step0.sh
+
+# 4. Create sh for each sample
+
+Step1.sh
+------------------------------------------------------------------------------------------------------------------------------------------------------------------ Start
+#!/bin/bash
+#SBATCH --ntasks-per-node=40     # Tasks per node
+#SBATCH --nodes=2                # Number of nodes requested
+#SBATCH --time=50:00:00          # walltime
+
+cd /scratch/yz3n18/Mark_redox/Process
+echo 1
+cat names_4 | while read x; do
+
+cd ./$x
+echo 2
+cp ../Step2.sh "$x".sh
+echo 3
+sed -i "s/x=/x=$x/" "$x".sh
+chmod a+x "$x".sh
+sbatch $x.sh
+cd ../
+echo 'end'
+done
+------------------------------------------------------------------------------------------------------------------------------------------------------------------- End
+sh Step1.sh
+
+# 5. Run upstream analysis
+
+Step2.sh
+------------------------------------------------------------------------------------------------------------------------------------------------------------------ Start
+#!/bin/bash
+#SBATCH --ntasks-per-node=40     # Tasks per node
+#SBATCH --nodes=2                # Number of nodes requested
+#SBATCH --time=50:00:00          # walltime
+
+cd /scratch/yz3n18/Mark_redox/X204SC21043576-Z01-F001_04/raw_data/
+
+module load conda
+source activate RNAseqPython3
+
+x=
+cd ./$x
+ls ./"$x"_1.fq.gz | xargs fastqc -o ./
+ls ./"$x"_2.fq.gz | xargs fastqc -o ./
+echo 'Step1 done'
+trim_galore -q 30 --phred33 --length 50 -e 0.1 --stringency 12 --paired  -o ./ ./"$x"_1.fq.gz ./"$x"_2.fq.gz
+echo 'trim_galore done'
+ls ./"$x"_1_val_1.fq.gz | xargs fastqc -o ./
+ls ./"$x"_2_val_2.fq.gz | xargs fastqc -o ./
+
+cd /scratch/yz3n18/STAR-2.7.9a/source
 
 STAR \
 --runThreadN 16 \
---genomeDir /scratch/yz3n18/reference/star \
---readFilesIn  /scratch/yz3n18/2019_Strunz/Picard/SRR10574069_unaligned_read_Molecular_tagged_polyA_filtered.fastq \
---outFileNamePrefix STAR_SRR10574069
-
+-- readFilesCommand zcat \
+--genomeDir /mainfs/scratch/yz3n18/STAR-2.7.9a/GRCh38_index/ \
+--readFilesIn  /scratch/yz3n18/Mark_redox/X204SC21043576-Z01-F001_04/raw_data/"$x"/"$x"_1_val_1.fq.gz /scratch/yz3n18/Mark_redox/X204SC21043576-Z01-F001_04/raw_data/"$x"/"$x"_2_val_2.fq.gz \
+--outFileNamePrefix /scratch/yz3n18/Mark_redox/X204SC21043576-Z01-F001_04/raw_data/$x/STAR_${x} \
+--outSAMtype BAM SortedByCoordinate \
+--outBAMsortingThreadN 16 \
+ 
 echo "** STAR alignment done **"
-
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------- End
+sbatch Step2.sh # submit file
+
