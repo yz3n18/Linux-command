@@ -18,35 +18,54 @@ BIOL3063/6074 & 6055
 Or in one step (using the –z option for gzipped files)
 • tar –zxvf LinuxTreasureHunt.tar.gz
 Get started
+
 Make a directory called “ANSWER” in your home directory, put any files you collect along the way here.
+
 CLUE1: There is a file that is not shown on the Treasure map, find it and open it to find the second clue.
 project4/datafiles/chrYUCSCgenes.txt
+
 #CLUE2:Copy the file called chrXUCSCgenes.txt in this directory, to your answer directory and save as "answer1".
 Now go up one directory. You are tired, find a place to rest.
 cp chrXUCSCgenes.txt /home/jg/BIOL6055/SESSION1/TREASUREHUNT/ANSWER/answer1
 go to project4/chr22UCSCgenes.bed
+
+
 #CLUE3:Copy the last 4 lines of this file to a file called "answer2" and move it to your answer directory. Now find the
 longest file in this directory.
 tail -n 4 *bed > /home/jg/BIOL6055/SESSION1/TREASUREHUNT/ANSWER/answer2
 longest file = chr19UCSCgenes.txt
+$ wc chr* | sort -r
+
 #CLUE4: Go to the project1 directory. Which file is has most recently modified?
 ls –lht
 Most recent at top and time shown =chr20microsat.txt
+
+
 #CLUE5: Find the deepest file (one furthest from home)
 Deepest= project2/jan2014/dataset2/1000gphase1.txt
+$ tree
+
 #CLUE6: Some files are very slow, this one is much quicker!
 Fasta file = project3/results/chr22gencodegenes.fasta
+
+
 CLUE7: Go to the datafiles directory in project2. Copy the file chr21dbsnp138.txt to your answer directory and call it
 "answer3". How many occurences of rs143503259 are there in the file chr22dbsnp138.txt? go to the line
 corresponding to that number. (i.e. if 20, go to line 20 in chr22dbsnp138.txt)
 cp chr21dbsnp138.txt /home/jg/BIOL6055/SESSION1/TREASUREHUNT/ANSWER/answer3
 grep rs143503259 chr22dbsnp138.txt | wc –l
 =11
+
+
 CLUE8: Extract rows 81-100 from chr20dbSNP138.txt, then extract "CLUE9" (just CLUE9 !)
 head -100 chr20dbsnp138.txt | tail -20 | grep -w CLUE9
+
+
 CLUE9: Go to the project3 datafiles directory and find out how long the longest line is in chr22gencodegenes.txt. Go
 to the file that has that many lines.
 wc -L chr22gencodegenes.txt
+
+
 CLUE10: Change the word "Atlantic" to the word "Caribbean" wherever it appears in this directory. Copy the file
 chr19gencodegenes.txt to your answer directory. Then go to your answer directory. Concatenate all the files in the
 folder and remove lines containing "Q" and "#". Save the file as answers_all and change the permissions to
@@ -58,6 +77,8 @@ cp chr19gencodegenes.txt /home/jg/BIOL6055/SESSION1/TREASUREHUNT/ANSWER/answer4
 cat * | egrep -v "Q|#" > answers_all
 chmod +x answers_all
 ./answers_all
+
+
 Prints to screen;
 ************************************************
 "Not all treasure's silver and gold, mate."
